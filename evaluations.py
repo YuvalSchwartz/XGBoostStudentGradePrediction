@@ -16,13 +16,18 @@ class Evaluation:
     def calculateStandardDeviation(self, df) -> float:
         return (abs(df['y_test'] - df['y_pred'])).std()
     
-    def oneSampleTTest(self, maeBaseline, maeModified, standartDeviation, sampleSize, alpha=0.05) -> bool:
-        t_statistic, p_value = stats.ttest_1samp([maeModified], maeBaseline, 0)
+    def confidenceItervalTest(self, maeBaseline, maeModified=0.801, standartDeviation=1, alpha=0.05) -> bool:
+        z_score = np.quantile(np.random.normal(0, 1, 10000), 1 - alpha/2)
+        print(f'Z-score: {z_score}')
         
-        print (f't_statistic: {t_statistic}')
-        print (f'p_value: {p_value}')
+        ci_lower = maeModified - z_score * standartDeviation
+        ci_upper = maeModified + z_score * standartDeviation
         
-        if p_value < alpha:
-            return True # Significant
+        if ci_lower <= maeBaseline <= ci_upper:
+            print(f"The SOTA score ({maeBaseline}) falls within the confidence interval of your model ({ci_lower:.4f} , {ci_upper:.4f}) at {alpha*100:.0f}% confidence level.")
+            print(f"The difference is not significant.")
+            return False
         else:
-            return False 
+            print(f"The SOTA score ({maeBaseline}) falls outside the confidence interval of your model ({ci_lower:.4f} , {ci_upper:.4f}) at {alpha*100:.0f}% confidence level.")
+            print(f"The difference is significant.")
+            return True

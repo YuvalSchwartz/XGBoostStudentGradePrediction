@@ -32,14 +32,10 @@ def main():
     print(f'Mean Absolute Error: {mae}')
     
     evaluator = evaluations.Evaluation()
-    mae = evaluator.calculateMAE(results)
-    print(f'Mean Absolute Error: {mae}')
-    mae = evaluator.calaculateMAE_WithRounding(results)
-    print(f'Mean Absolute Error with Rounding: {mae}')
-    std = evaluator.calculateStandardDeviation(results)
-    
-    isSignificant = evaluator.oneSampleTTest(maeBaseline=mae, maeModified=0.803, standartDeviation=std, sampleSize=1104, alpha=0.05)
-    print(f'Is the difference significant? {isSignificant}')
+    maeRounded = evaluator.calaculateMAE_WithRounding(results)
+    standatDeviation = evaluator.calculateStandardDeviation(results)
+    significant = evaluator.confidenceItervalTest(0.803, 0.801, standatDeviation, 0.5)
+
 
 if __name__ == '__main__':
     main()
