@@ -24,10 +24,10 @@ class Evaluation:
         ci_upper = maeModified + z_score * standartDeviation
         
         if ci_lower <= maeBaseline <= ci_upper:
-            print(f"The SOTA score ({maeBaseline}) falls within the confidence interval of your model ({ci_lower:.4f} , {ci_upper:.4f}) at {alpha*100:.0f}% confidence level.")
+            print(f"The baseline score ({maeBaseline}) falls within the confidence interval of the modified model ({ci_lower:.4f} , {ci_upper:.4f}) at {alpha*100:.0f}% confidence level.")
             print(f"The difference is not significant.")
             return False
         else:
-            print(f"The SOTA score ({maeBaseline}) falls outside the confidence interval of your model ({ci_lower:.4f} , {ci_upper:.4f}) at {alpha*100:.0f}% confidence level.")
+            print(f"The baseline score ({maeBaseline}) falls outside the confidence interval of the modified model ({ci_lower:.4f} , {ci_upper:.4f}) at {alpha*100:.0f}% confidence level.")
             print(f"The difference is significant.")
             return True
