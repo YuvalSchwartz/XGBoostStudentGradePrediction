@@ -17,9 +17,18 @@ def load_data():
     por_df = pd.read_csv(por_data_path)
     por_df['course'] = 'portuguese'
     students_df = pd.concat([mat_df, por_df])
-    cat_columns = students_df.select_dtypes(['object']).columns
-    students_df[cat_columns] = students_df[cat_columns].astype('category')
     return students_df
+
+
+def feature_engineering(X):
+    X['G1_G2_interaction'] = np.abs(X['G1'] - X['G2'])
+    return X
+
+
+def convert_object_to_category(X):
+    cat_columns = X.select_dtypes(['object']).columns
+    X[cat_columns] = X[cat_columns].astype('category')
+    return X
 
 
 def find_optimal_params(X, y, seed):
@@ -28,7 +37,7 @@ def find_optimal_params(X, y, seed):
         params = {
             'max_depth': trial.suggest_int('max_depth', 1, 6),
             'learning_rate': trial.suggest_float('learning_rate', 0.01, 1.0),
-            'n_estimators': trial.suggest_int('n_estimators', 50, 500),
+            'n_estimators': trial.suggest_int('n_estimators', 50, 750),
             'min_child_weight': trial.suggest_int('min_child_weight', 1, 100),
             'gamma': trial.suggest_float('gamma', 0.01, 1.0),
             'subsample': trial.suggest_float('subsample', 0.01, 1.0),
@@ -44,10 +53,8 @@ def find_optimal_params(X, y, seed):
         y_pred = np.clip(y_pred, 0, 20)
         mae = mean_absolute_error(y_test, y_pred)
         return mae
-
     study = optuna.create_study(direction='minimize')
-    study.optimize(objective, n_trials=1000)
-
+    study.optimize(objective, n_trials=3000)
     print('Number of finished trials:', len(study.trials))
     print('Best trial:')
     trial = study.best_trial
@@ -58,61 +65,54 @@ def find_optimal_params(X, y, seed):
     return trial.params
 
 
-def custom_round(x, threshold):
-    if isinstance(x, np.ndarray):
-        return np.floor(x) + (x % 1 >= threshold)
-    else:
-        return np.floor(x) + (x % 1 >= threshold)
-
-
-def run_regressor(X, y, optimal_params, seed):
+def run_regressor(X, y, seed, optimal_params=None):
     n_splits = 10
     kf = KFold(n_splits=n_splits, shuffle=True, random_state=seed)
-
     mae_list = []
     for train_index, test_index in kf.split(X):
         X_train, X_test = X.iloc[train_index], X.iloc[test_index]
         y_train, y_test = y.iloc[train_index], y.iloc[test_index]
-
-        model = xgb.XGBRegressor(**optimal_params, enable_categorical=True)
+        if optimal_params is None:
+            model = xgb.XGBRegressor(enable_categorical=True)
+        else:
+            model = xgb.XGBRegressor(**optimal_params, enable_categorical=True)
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
-        y_pred = custom_round(y_pred, 0.55)
+        y_pred = np.round(y_pred)
         y_pred = np.clip(y_pred, 0, 20)
-
         mae = mean_absolute_error(y_test, y_pred)
         mae_list.append(mae)
-
     avg_mae = np.mean(mae_list)
     print(f'Average Mean Absolute Error across {n_splits} folds: {avg_mae}')
-
-    # importance = model.get_booster().get_score(importance_type='weight')
-    # print(importance)
-
-    # fig, ax = plt.subplots(figsize=(10, 8))
-    # plot_importance(model, ax=ax, importance_type='weight')
-    # plt.show()
+    importance = model.get_booster().get_score(importance_type='weight')
+    print(importance)
+    fig, ax = plt.subplots(figsize=(10, 8))
+    plot_importance(model, ax=ax, importance_type='weight')
+    plt.show()
 
 
 def main():
     seed = 42
     students_df = load_data()
-    # students_df.drop(['address', 'famsup', 'nursery', 'internet'], axis=1, inplace=True)
     X = students_df.drop(['G3'], axis=1)
+    X = feature_engineering(X)
+    X = convert_object_to_category(X)
     y = students_df['G3']
+    # optimal_params = find_optimal_params(X, y, seed)
     optimal_params = {
         'max_depth': 3,
-        'learning_rate': 0.12029386320296027,
-        'n_estimators': 50,
-        'min_child_weight': 15,
-        'gamma': 0.41122087230906346,
-        'subsample': 0.8653434717474726,
-        'colsample_bytree': 0.9708333738490725,
-        'reg_alpha': 0.2221104520628081,
-        'reg_lambda': 0.04597590979587908,
-        'random_state': 660
+        'learning_rate': 0.010322048435422228,
+        'n_estimators': 384,
+        'min_child_weight': 19,
+        'gamma': 0.9272196990826382,
+        'subsample': 0.918293434562889,
+        'colsample_bytree': 0.9986801767250817,
+        'reg_alpha': 0.4746275842672103,
+        'reg_lambda': 0.7525318986291032,
+        'random_state': 908
     }
-    run_regressor(X, y, optimal_params, seed)
+    run_regressor(X, y, seed, optimal_params)
+    # run_regressor(X, y, seed)
 
 
 if __name__ == '__main__':
