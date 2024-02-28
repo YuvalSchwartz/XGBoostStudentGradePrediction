@@ -1,13 +1,28 @@
 import pandas as pd
+import numpy as np
+import scipy.stats as stats
 
 class Evaluation:
     def __init__(self):
         pass
 
-    def calculate_mae(self, df):
-        if not all(column in df.columns for column in ['index', 'actual value', 'predicted value']):
-            raise ValueError("DataFrame must contain columns: 'index', 'y_test', 'y_pred'")
+    def calculateMAE(self, df) -> float:
+        return (abs(df['y_test'] - df['y_pred'])).mean()
+        
 
-        df['absolute error'] = abs(df['actual value'] - df['predicted value'])
-        mae_score = df['absolute error'].mean()
-        return mae_score
+    def calaculateMAE_WithRounding(self, df) -> float:
+        return (abs(df['y_test'] - df['y_pred'].round())).mean()
+    
+    def calculateStandardDeviation(self, df) -> float:
+        return (abs(df['y_test'] - df['y_pred'])).std()
+    
+    def oneSampleTTest(self, maeBaseline, maeModified, standartDeviation, sampleSize, alpha=0.05) -> bool:
+        t_statistic, p_value = stats.ttest_1samp([maeModified], maeBaseline, 0)
+        
+        print (f't_statistic: {t_statistic}')
+        print (f'p_value: {p_value}')
+        
+        if p_value < alpha:
+            return True # Significant
+        else:
+            return False 
