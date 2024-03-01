@@ -30,11 +30,11 @@ class Evaluation:
         ci_upper = maeModified + z_score * standartDeviation
         
         if ci_lower <= maeBaseline <= ci_upper:
-            print(f"The baseline score ({maeBaseline}) falls within the confidence interval of the modified model ({ci_lower:.4f} , {ci_upper:.4f}) at {self.alpha * 100:.0f}% confidence level.")
+            print(f"The baseline score ({maeBaseline}) falls within the confidence interval of the modified model ({ci_lower:.3f} , {ci_upper:.3f}) at {self.alpha * 100:.0f}% confidence level.")
             print(f"The difference is not significant.")
             return False
         else:
-            print(f"The baseline score ({maeBaseline}) falls outside the confidence interval of the modified model ({ci_lower:.4f} , {ci_upper:.4f}) at {self.alpha * 100:.0f}% confidence level.")
+            print(f"The baseline score ({maeBaseline}) falls outside the confidence interval of the modified model ({ci_lower:.3f} , {ci_upper:.3f}) at {self.alpha * 100:.0f}% confidence level.")
             print(f"The difference is significant.")
             return True
 
@@ -50,7 +50,7 @@ class Evaluation:
         lower_bound = np.percentile(bootstrap_mae_scores, lower_percentile)
         upper_bound = np.percentile(bootstrap_mae_scores, upper_percentile)
 
-        # Print confidence interval
+        # Print MAE and confidence interval
         print(f"MAE = {np.mean(bootstrap_mae_scores):.3f}, {(1 - self.alpha) * 100:g}% CI: {lower_bound:.3f}-{upper_bound:.3f} (based on {self.number_of_bootstrap_samples} bootstraps).")
         
         # Hypothesis testing

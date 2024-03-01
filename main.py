@@ -1,13 +1,13 @@
 import os
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
 from sklearn.metrics import mean_absolute_error
-from sklearn.model_selection import train_test_split, KFold
+from sklearn.model_selection import train_test_split
 import xgboost as xgb
 import optuna
 from xgboost import plot_importance
-import matplotlib.pyplot as plt
-from evaluations import Evaluation
+from evaluation import Evaluation
 
 
 def load_data():
@@ -22,11 +22,13 @@ def load_data():
 
 
 def feature_selection(X):
+    # X.drop(['higher', 'Pstatus'], axis=1, inplace=True)
     return X
 
 
 def feature_extraction(X):
-    X['G1_G2_interaction'] = np.abs(X['G1'] - X['G2'])
+    # X['G1_G2_interaction'] = np.abs(X['G1'] - X['G2'])
+    # X['G1_to_G2_improvement_rate'] = (X['G2'] - X['G1']) / 2
     return X
 
 
@@ -36,7 +38,7 @@ def convert_object_to_category(X):
     return X
 
 
-def find_optimal_params(X, y, seed):
+def find_optimal_params(X, y):
     def objective(trial):
         params = {
             'max_depth': trial.suggest_int('max_depth', 1, 6),
@@ -50,7 +52,7 @@ def find_optimal_params(X, y, seed):
             'reg_lambda': trial.suggest_float('reg_lambda', 0.01, 1.0),
             'random_state': trial.suggest_int('random_state', 1, 1000)
         }
-        model_results = run_regressor(X, y, seed, params)
+        model_results = run_xgboost(X, y, params)
         mae = mean_absolute_error(model_results['y_test'], model_results['y_pred'])
         return mae
     study = optuna.create_study(direction='minimize')
@@ -65,34 +67,37 @@ def find_optimal_params(X, y, seed):
     return trial.params
 
 
-def run_regressor(X, y, seed, optimal_params=None):
-    x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=seed)
-    if optimal_params is None:
+def run_xgboost(X, y, params=None):
+    x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    if params is None:
         model = xgb.XGBRegressor(enable_categorical=True)
     else:
-        model = xgb.XGBRegressor(enable_categorical=True, **optimal_params)
+        model = xgb.XGBRegressor(enable_categorical=True, **params)
     model.fit(x_train, y_train)
     y_pred = model.predict(x_test)
     y_pred = np.round(y_pred)
     y_pred = np.clip(y_pred, 0, 20)
-    # importance = model.get_booster().get_score(importance_type='weight')
-    # print(importance)
-    # fig, ax = plt.subplots(figsize=(10, 8))
-    # plot_importance(model, ax=ax, importance_type='weight')
-    # plt.show()
+    importance = model.get_booster().get_score(importance_type='weight')
+    features_not_used = set(X.columns) - set(importance.keys())
+    if len(features_not_used) > 0:
+        print(f"Features not used: {features_not_used}")
+    print(importance)
+    fig, ax = plt.subplots(figsize=(10, 8))
+    plot_importance(model, ax=ax, importance_type='weight')
+    plt.show()
     results = pd.DataFrame({'y_test': y_test, 'y_pred': y_pred})
     return results
 
 
 def main():
-    seed = 42
+    np.random.seed(42)
     students_df = load_data()
     X = students_df.drop(['G3'], axis=1)
     X = feature_selection(X)
     X = feature_extraction(X)
     X = convert_object_to_category(X)
     y = students_df['G3']
-    # optimal_params = find_optimal_params(X, y, seed)
+    # optimal_params = find_optimal_params(X, y)
     # optimal_params = {
     #     'max_depth': 3,
     #     'learning_rate': 0.010322048435422228,
@@ -105,8 +110,8 @@ def main():
     #     'reg_lambda': 0.7525318986291032,
     #     'random_state': 908
     # }
-    # run_regressor(X, y, seed, optimal_params)
-    model_results = run_regressor(X, y, seed)
+    # run_regressor(X, y, optimal_params)
+    model_results = run_xgboost(X, y)
     model_results.to_csv('results.csv')
     evaluation = Evaluation()
     evaluation.bootstrap_hypothesis_test()
