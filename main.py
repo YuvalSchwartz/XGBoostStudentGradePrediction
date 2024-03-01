@@ -8,6 +8,8 @@ import optuna
 from xgboost import plot_importance
 import matplotlib.pyplot as plt
 
+from evaluations import Evaluation
+
 
 def load_data():
     mat_data_path = os.path.abspath('data\\student-mat.csv')
@@ -111,9 +113,11 @@ def main():
         'reg_lambda': 0.7525318986291032,
         'random_state': 908
     }
-    run_regressor(X, y, seed, optimal_params)
+    # run_regressor(X, y, seed, optimal_params)
     # run_regressor(X, y, seed)
 
+    evaluation = Evaluation()
+    evaluation.bootstrap_hypothesis_test()
 
 if __name__ == '__main__':
     main()
