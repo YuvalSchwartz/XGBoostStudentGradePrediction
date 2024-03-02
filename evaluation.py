@@ -8,35 +8,35 @@ from matplotlib.patches import Patch
 from sklearn.metrics import mean_absolute_error
 
 class Evaluation:
-    def __init__(self, results_file_path="results.csv"):
-        self.results_df = pd.read_csv(results_file_path)
+    def __init__(self, results_df):
+        self.results_df = results_df
         self.alpha = 0.05
-        self.number_of_bootstrap_samples = 1000
+        self.number_of_bootstrap_samples = 10000
 
-    def calculateMAE(self) -> float:
-        return (abs(self.results_df['y_test'] - self.results_df['y_pred'])).mean()
+    # def calculateMAE(self) -> float:
+    #     return (abs(self.results_df['y_test'] - self.results_df['y_pred'])).mean()
 
-    def calaculateMAE_WithRounding(self) -> float:
-        return (abs(self.results_df['y_test'] - self.results_df['y_pred'].round())).mean()
+    # def calaculateMAE_WithRounding(self) -> float:
+    #     return (abs(self.results_df['y_test'] - self.results_df['y_pred'].round())).mean()
 
-    def calculateStandardDeviation(self) -> float:
-        return (abs(self.results_df['y_test'] - self.results_df['y_pred'])).std()
+    # def calculateStandardDeviation(self) -> float:
+    #     return (abs(self.results_df['y_test'] - self.results_df['y_pred'])).std()
 
-    def confidenceItervalTest(self, maeBaseline, maeModified=0.801, standartDeviation=1) -> bool:
-        z_score = np.quantile(np.random.normal(0, 1, 10000), 1 - self.alpha / 2)
-        print(f'Z-score: {z_score}')
-        
-        ci_lower = maeModified - z_score * standartDeviation
-        ci_upper = maeModified + z_score * standartDeviation
-        
-        if ci_lower <= maeBaseline <= ci_upper:
-            print(f"The baseline score ({maeBaseline}) falls within the confidence interval of the modified model ({ci_lower:.3f} , {ci_upper:.3f}) at {self.alpha * 100:.0f}% confidence level.")
-            print(f"The difference is not significant.")
-            return False
-        else:
-            print(f"The baseline score ({maeBaseline}) falls outside the confidence interval of the modified model ({ci_lower:.3f} , {ci_upper:.3f}) at {self.alpha * 100:.0f}% confidence level.")
-            print(f"The difference is significant.")
-            return True
+    # def confidenceItervalTest(self, maeBaseline, maeModified=0.801, standartDeviation=1) -> bool:
+    #     z_score = np.quantile(np.random.normal(0, 1, 10000), 1 - self.alpha / 2)
+    #     print(f'Z-score: {z_score}')
+    #
+    #     ci_lower = maeModified - z_score * standartDeviation
+    #     ci_upper = maeModified + z_score * standartDeviation
+    #
+    #     if ci_lower <= maeBaseline <= ci_upper:
+    #         print(f"The baseline score ({maeBaseline}) falls within the confidence interval of the modified model ({ci_lower:.3f} , {ci_upper:.3f}) at {self.alpha * 100:.0f}% confidence level.")
+    #         print(f"The difference is not significant.")
+    #         return False
+    #     else:
+    #         print(f"The baseline score ({maeBaseline}) falls outside the confidence interval of the modified model ({ci_lower:.3f} , {ci_upper:.3f}) at {self.alpha * 100:.0f}% confidence level.")
+    #         print(f"The difference is significant.")
+    #         return True
 
     def bootstrap_hypothesis_test(self, reference_mae=0.801):
         bootstrap_mae_scores = []
@@ -52,7 +52,7 @@ class Evaluation:
 
         # Print MAE and confidence interval
         print(f"MAE = {np.mean(bootstrap_mae_scores):.3f}, {(1 - self.alpha) * 100:g}% CI: {lower_bound:.3f}-{upper_bound:.3f} (based on {self.number_of_bootstrap_samples} bootstraps).")
-        
+
         # Hypothesis testing
         if reference_mae < lower_bound:
             print("The original model performs significantly better than the new model.")
@@ -88,3 +88,17 @@ class Evaluation:
         histogram_image_name = f"maes_histogram.png"
         plt.savefig(histogram_image_name, dpi=300)
         plt.close(fig_hist)
+
+    def plot_actual_vs_predicted(self):
+        fig, ax = plt.subplots()
+        ax.scatter(self.results_df['y_test'], self.results_df['y_pred'], color='darkred', alpha=0.7)
+        ax.plot([0, 1], [0, 1], transform=ax.transAxes, ls="--", c="dimgrey")
+        ax.set_title('Actual vs. Predicted Values')
+        ax.set_xlabel('Actual Values')
+        ax.set_ylabel('Predicted Values')
+        fig.subplots_adjust(bottom=0.18, left=0.18)
+        plt.grid(alpha=0.5)
+        # Save the scatter plot image
+        scatter_plot_image_name = f"actual_vs_predicted.png"
+        plt.savefig(scatter_plot_image_name, dpi=300)
+        plt.close(fig)
