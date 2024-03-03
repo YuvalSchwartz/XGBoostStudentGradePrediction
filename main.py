@@ -182,26 +182,26 @@ def convert_object_to_category(x):
 def find_optimal_params(features_to_remove=[]):
     def objective(trial):
         params = {
-            'n_estimators': trial.suggest_int('n_estimators', 300, 400),
-            'max_depth': trial.suggest_int('max_depth', 6, 8),
-            'min_child_weight': trial.suggest_int('min_child_weight', 1, 5),
-            'learning_rate': trial.suggest_float('learning_rate', 0.15, 0.22),
-            'subsample': trial.suggest_float('subsample', 0.8, 1.0),
-            'colsample_bytree': trial.suggest_float('colsample_bytree', 0.9, 1.0),
-            'colsample_bylevel': trial.suggest_float('colsample_bylevel', 0.1, 1.0),
-            'colsample_bynode': trial.suggest_float('colsample_bynode', 0.1, 1.0),
-            'alpha': trial.suggest_float('reg_alpha', 3.8, 5.5),
-            'lambda': trial.suggest_float('reg_lambda', 0.001, 0.1),
-            'gamma': trial.suggest_float('gamma', 4.5, 5.5),
-            'scale_pos_weight': trial.suggest_float('scale_pos_weight', 1, 1.5),
-            'base_score': trial.suggest_float('base_score', 0.1, 0.5),
+            'n_estimators': trial.suggest_int('n_estimators', 350, 450),
+            'max_depth': trial.suggest_int('max_depth', 7, 9),
+            'min_child_weight': trial.suggest_int('min_child_weight', 1, 3),
+            'learning_rate': trial.suggest_float('learning_rate', 0.12, 0.18),
+            'subsample': trial.suggest_float('subsample', 0.75, 1.0),
+            'colsample_bytree': trial.suggest_float('colsample_bytree', 0.92, 1.0),
+            'colsample_bylevel': trial.suggest_float('colsample_bylevel', 0.91, 1.0),
+            'colsample_bynode': trial.suggest_float('colsample_bynode', 0.92, 1.0),
+            'alpha': trial.suggest_float('reg_alpha', 3.8, 5.4),
+            'lambda': trial.suggest_float('reg_lambda', 0.05, 0.11),
+            'gamma': trial.suggest_float('gamma', 4.9, 5.5),
+            'scale_pos_weight': trial.suggest_float('scale_pos_weight', 1.2, 1.5),
+            'base_score': trial.suggest_float('base_score', 0.09, 0.22),
             'random_state': seed
         }
         results_df = run_xgboost(features_to_remove=features_to_remove, params=params)
         mean_mae = Evaluation(results_df).get_mean_mae()
         return mean_mae
     study = optuna.create_study(direction='minimize')
-    study.optimize(objective, n_trials=1000)
+    study.optimize(objective, n_trials=2500)
     print('Number of finished trials:', len(study.trials))
     print('Best trial:')
     trial = study.best_trial
@@ -212,12 +212,14 @@ def find_optimal_params(features_to_remove=[]):
     return trial.params
 
 
-def find_optimal_rounding_threshold(features_to_remove=[], params=None):
+def find_optimal_rounding_threshold(model_shortname, features_to_remove=[], params=None):
     lowest_mae = float('inf')
     for i in range(1, 100):
         rounding_threshold = i / 100
-        results_df = run_xgboost(features_to_remove=features_to_remove, params=params, rounding_threshold=rounding_threshold)
-        # results_df = run_linear_regression(features_to_remove=features_to_remove, rounding_threshold=rounding_threshold)
+        if model_shortname == 'xgb':
+            results_df = run_xgboost(features_to_remove=features_to_remove, params=params, rounding_threshold=rounding_threshold)
+        elif model_shortname == 'lr':
+            results_df = run_linear_regression(features_to_remove=features_to_remove, rounding_threshold=rounding_threshold)
         mean_mae = Evaluation(results_df).get_mean_mae()
         print(f"Threshold: {rounding_threshold}, MAE: {mean_mae}")
         if mean_mae < lowest_mae:
@@ -259,35 +261,24 @@ def run_xgboost(features_to_remove=[], params=None, rounding_threshold=0.5):
     return pd.DataFrame({'y_test': y_test, 'y_pred': y_pred})
 
 
-def run_linear_regression(features_to_remove=[], rounding_threshold=0.5):
-    np.random.seed(seed)
-    x_train, x_test, y_train, y_test = train_test_split_stratified(features_to_remove=features_to_remove, use_dummies=True)
-    model = LinearRegression()
-    model.fit(x_train, y_train)
-    y_pred = model.predict(x_test)
-    y_pred = np.where(y_pred - np.floor(y_pred) < rounding_threshold, np.floor(y_pred), np.ceil(y_pred))
-    y_pred = np.clip(y_pred, 0, 20)
-    return pd.DataFrame({'y_test': y_test, 'y_pred': y_pred})
-
-
-def main():
+def method_main():
     # features_to_remove = find_worst_feature_to_remove()
     features_to_remove = ['Medu', 'internet', 'age']
     # optimal_params = find_optimal_params(features_to_remove=features_to_remove)
     optimal_params = {
-        'n_estimators': 396,
-        'max_depth': 8,
+        'n_estimators': 433,
+        'max_depth': 9,
         'min_child_weight': 1,
-        'learning_rate': 0.15953925887732687,
-        'subsample': 0.9068652776101843,
-        'colsample_bytree': 0.9618043208012167,
-        'colsample_bylevel': 0.9503632119938832,
-        'colsample_bynode': 0.9653524407393115,
-        'alpha': 4.185525761836918,
-        'lambda': 0.09564637563324045,
-        'gamma': 5.2321631820243555,
-        'scale_pos_weight': 1.4332260328103243,
-        'base_score': 0.17881280040972347,
+        'learning_rate': 0.1593006081373505,
+        'subsample': 0.9363946470907386,
+        'colsample_bytree': 0.9473389878358222,
+        'colsample_bylevel': 0.9651932832694531,
+        'colsample_bynode': 0.9949297881381598,
+        'alpha': 3.920082949592277,
+        'lambda': 0.06590197239682516,
+        'gamma': 5.3176098662122895,
+        'scale_pos_weight': 1.3676792679014016,
+        'base_score': 0.1945098604899697,
         'random_state': seed
     }
     # optimal_rounding_threshold = find_optimal_rounding_threshold(features_to_remove=features_to_remove, params=optimal_params)
@@ -300,35 +291,67 @@ def main():
     evaluation.plot_actual_vs_predicted()
 
 
-def high_significance_impact_features_ablation():
-    high_significance_impact_features = ['Medu', 'Fedu', 'schoolsup', 'studytime', 'higher', 'internet', 'Dalc']
-    # optimal_rounding_threshold = find_optimal_rounding_threshold()
-    optimal_rounding_threshold = 0.2
-    lr_results_df = run_linear_regression(rounding_threshold=optimal_rounding_threshold)
-    evaluation = Evaluation(lr_results_df)
-    print(evaluation.get_mae_and_ci_string())
+def run_linear_regression(features_to_remove=[], rounding_threshold=0.5):
+    np.random.seed(seed)
+    x_train, x_test, y_train, y_test = train_test_split_stratified(features_to_remove=features_to_remove, use_dummies=True)
+    model = LinearRegression()
+    model.fit(x_train, y_train)
+    y_pred = model.predict(x_test)
+    y_pred = np.where(y_pred - np.floor(y_pred) < rounding_threshold, np.floor(y_pred), np.ceil(y_pred))
+    y_pred = np.clip(y_pred, 0, 20)
+    return pd.DataFrame({'y_test': y_test, 'y_pred': y_pred})
 
 
-def moderate_significance_impact_features_ablation():
-    moderate_significance_impact_features = ['school', 'reason', 'sex', 'address', 'Pstatus', 'Mjob', 'Fjob', 'paid', 'activities', 'nursery']
-    # optimal_rounding_threshold = find_optimal_rounding_threshold()
-    optimal_rounding_threshold = 0.2
-    lr_results_df = run_linear_regression(rounding_threshold=optimal_rounding_threshold)
-    evaluation = Evaluation(lr_results_df)
-    print(evaluation.get_mae_and_ci_string())
+def significance_impact_features_ablation(model_fullname, initial_evaluation, ablated_evaluation):
+    if ablated_evaluation.get_mean_mae() > initial_evaluation.get_mean_mae():
+        if ablated_evaluation.get_mean_mae() > initial_evaluation.get_upper_bound():
+            print(f"Ablated {model_fullname} model performs significantly worse than {model_fullname} model.")
+        else:
+            print(f"Ablated {model_fullname} model performs worse than {model_fullname} model.")
+    elif ablated_evaluation.get_mean_mae() < initial_evaluation.get_mean_mae():
+        if ablated_evaluation.get_mean_mae() < initial_evaluation.get_lower_bound():
+            print(f"Ablated {model_fullname} model performs significantly better than {model_fullname} model.")
+        else:
+            print(f"Ablated {model_fullname} model performs better than {model_fullname} model.")
 
 
-def low_significance_impact_features_ablation():
-    low_significance_impact_features = ['age', 'famsize', 'guardian', 'traveltime', 'failures', 'romantic', 'famrel', 'freetime', 'health']
-    # optimal_rounding_threshold = find_optimal_rounding_threshold()
-    optimal_rounding_threshold = 0.2
-    lr_results_df = run_linear_regression(rounding_threshold=optimal_rounding_threshold)
-    evaluation = Evaluation(lr_results_df)
-    print(evaluation.get_mae_and_ci_string())
+def ablations_main():
+    xgb_evaluation = Evaluation(run_xgboost(rounding_threshold=0.62))
+    print(f"Initial XGBoost {xgb_evaluation.get_mae_and_ci_string()}")
+    lr_evaluation = Evaluation(run_linear_regression(rounding_threshold=0.21))
+    print(f"Initial LinearRegression {lr_evaluation.get_mae_and_ci_string()}")
+
+    print('\n*High Significance Impact Features Ablation*')
+    high_significance_impact_features = ['Medu', 'Fedu', 'studytime', 'schoolsup', 'famsup', 'higher', 'internet', 'Dalc', 'G1', 'G2']
+    print('Features to remove:', high_significance_impact_features)
+    high_ablated_xgb_evaluation = Evaluation(run_xgboost(features_to_remove=high_significance_impact_features, rounding_threshold=0.83))
+    print(f"High Ablated XGBoost {high_ablated_xgb_evaluation.get_mae_and_ci_string()}")
+    significance_impact_features_ablation("XGBoost", xgb_evaluation, high_ablated_xgb_evaluation)
+    high_ablated_lr_evaluation = Evaluation(run_linear_regression(features_to_remove=high_significance_impact_features, rounding_threshold=0.27))
+    print(f"High Ablated LinearRegression {high_ablated_lr_evaluation.get_mae_and_ci_string()}")
+    significance_impact_features_ablation("LinearRegression", lr_evaluation, high_ablated_lr_evaluation)
+
+    print('\n*Moderate Significance Impact Features Ablation*')
+    moderate_significance_impact_features = ['school', 'reason', 'sex', 'address', 'Pstatus', 'Mjob', 'Fjob', 'paid', 'activities', 'nursery', 'Walc', 'absences']
+    print('Features to remove:', moderate_significance_impact_features)
+    moderate_ablated_xgb_evaluation = Evaluation(run_xgboost(features_to_remove=moderate_significance_impact_features, rounding_threshold=0.49))
+    print(f"Moderate Ablated XGBoost {moderate_ablated_xgb_evaluation.get_mae_and_ci_string()}")
+    significance_impact_features_ablation("XGBoost", xgb_evaluation, moderate_ablated_xgb_evaluation)
+    moderate_ablated_lr_evaluation = Evaluation(run_linear_regression(features_to_remove=moderate_significance_impact_features, rounding_threshold=0.17))
+    print(f"Moderate Ablated LinearRegression {moderate_ablated_lr_evaluation.get_mae_and_ci_string()}")
+    significance_impact_features_ablation("LinearRegression", lr_evaluation, moderate_ablated_lr_evaluation)
+
+    print('\n*Low Significance Impact Features Ablation*')
+    low_significance_impact_features = ['age', 'famsize', 'guardian', 'traveltime', 'failures', 'romantic', 'famrel', 'freetime', 'goout', 'health', 'course']
+    print('Features to remove:', low_significance_impact_features)
+    low_ablated_xgb_evaluation = Evaluation(run_xgboost(features_to_remove=low_significance_impact_features, rounding_threshold=0.69))
+    print(f"Low Ablated XGBoost {low_ablated_xgb_evaluation.get_mae_and_ci_string()}")
+    significance_impact_features_ablation("XGBoost", xgb_evaluation, low_ablated_xgb_evaluation)
+    low_ablated_lr_evaluation = Evaluation(run_linear_regression(features_to_remove=low_significance_impact_features, rounding_threshold=0.3))
+    print(f"Low Ablated LinearRegression {low_ablated_lr_evaluation.get_mae_and_ci_string()}")
+    significance_impact_features_ablation("LinearRegression", lr_evaluation, low_ablated_lr_evaluation)
 
 
 if __name__ == '__main__':
-    main()
-    # high_significance_impact_features_ablation()
-    # moderate_significance_impact_features_ablation()
-    # low_significance_impact_features_ablation()
+    method_main()
+    # ablations_main()
