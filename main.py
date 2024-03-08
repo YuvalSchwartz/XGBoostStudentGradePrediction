@@ -289,6 +289,7 @@ def method_main():
     print(evaluation.get_mae_and_ci_string())
     evaluation.plot_maes_histogram()
     evaluation.plot_actual_vs_predicted()
+    evaluation.plot_confidence_interval_over_histogram()
 
 
 def run_linear_regression(features_to_remove=[], rounding_threshold=0.5):

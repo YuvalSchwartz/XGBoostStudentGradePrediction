@@ -111,3 +111,37 @@ class Evaluation:
         scatter_plot_image_name = f"actual_vs_predicted.png"
         plt.savefig(scatter_plot_image_name, dpi=300)
         plt.close(fig)
+        
+    def plot_confidence_interval_over_histogram(self):
+        fig_hist, ax_hist = plt.subplots()
+        ax_hist.hist(self.mae_bootstraps, bins=12, color='lightsteelblue', ec="k")
+        ax_hist.set_title(f'Distribution of MAEs Using {self.number_of_bootstrap_samples} Bootstraps')
+        ax_hist.set_xlabel('MAEs')
+        ax_hist.set_ylabel('Frequency')
+        fig_hist.subplots_adjust(bottom=0.18, left=0.18)
+        ax_hist.axvline(x=self.lower_bound, color='dimgrey', linestyle='--', linewidth=1.25)
+        ax_hist.axvline(x=self.upper_bound, color='dimgrey', linestyle='--', linewidth=1.25)
+        legend_patch = Patch(color='lightsteelblue', label=f"XGBoost (MAE = {self.mean_mae:.3f}, {(1 - self.alpha) * 100:g}% Confidence Interval: {self.lower_bound:.3f}-{self.upper_bound:.3f})")
+        ax_hist.legend(handles=[legend_patch], loc='upper center', bbox_to_anchor=(0.5, -0.15))
+
+        # Save the histogram image
+        histogram_image_name = f"maes_histogram.png"
+        plt.savefig(histogram_image_name, dpi=300)
+        plt.close(fig_hist)
+
+        fig, ax = plt.subplots(figsize=(9, 9))
+        ax.scatter(self.results_df['y_test'], self.results_df['y_pred'], color='b', alpha=0.4, zorder=5)
+        ax.set_aspect('equal')
+        ax.plot([0, 1], [0, 1], transform=ax.transAxes, ls="--", c="dimgrey")
+        plt.xticks(range(0, 20, 1))
+        plt.yticks(range(0, 19, 1))
+        ax.set_title("Actual vs. Predicted 'G3' Values")
+        ax.set_xlabel("Actual 'G3' Values")
+        ax.set_ylabel("Predicted 'G3' Values")
+        fig.subplots_adjust(bottom=0.18, left=0.18)
+        plt.grid(alpha=0.4)
+        # Save the scatter plot image
+        scatter_plot_image_name = f"actual_vs_predicted.png"
+        plt.savefig(scatter_plot_image_name, dpi=300)
+        plt.close(fig)
+        return histogram_image_name, scatter_plot_image_name
