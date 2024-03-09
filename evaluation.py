@@ -96,18 +96,18 @@ class Evaluation:
         plt.close(fig_hist)
 
     def plot_actual_vs_predicted(self):
-        fig, ax = plt.subplots(figsize=(9, 9))
-        ax.scatter(self.results_df['y_test'], self.results_df['y_pred'], color='b', alpha=0.4, zorder=5)
+        fig, ax = plt.subplots(figsize=(10, 10))
+        ax.scatter(self.results_df['y_test'], self.results_df['y_pred'], color='b', alpha=0.4, zorder=5, label=f"XGBoostRegressor (MAE = {self.mean_mae:.3f}, {(1 - self.alpha) * 100:g}% CI: {self.lower_bound:.3f}-{self.upper_bound:.3f})")
         ax.set_aspect('equal')
         ax.plot([0, 1], [0, 1], transform=ax.transAxes, ls="--", c="dimgrey")
-        plt.xticks(range(0, 20, 1))
-        plt.yticks(range(0, 19, 1))
+        plt.xticks(range(0, 21, 1))
+        plt.yticks(range(0, 21, 1))
         ax.set_title("Actual vs. Predicted 'G3' Values")
         ax.set_xlabel("Actual 'G3' Values")
         ax.set_ylabel("Predicted 'G3' Values")
         fig.subplots_adjust(bottom=0.18, left=0.18)
         plt.grid(alpha=0.4)
-        # Save the scatter plot image
+        ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10), fontsize=17)
         scatter_plot_image_name = f"actual_vs_predicted.png"
         plt.savefig(scatter_plot_image_name, dpi=300)
         plt.close(fig)

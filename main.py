@@ -23,28 +23,28 @@ def load_data():
     return students_df
 
 
-def plot_g3_distribution(segment_to_bins=False):
-    students_df = load_data()
+def plot_g3_distribution(data, segment_to_bins=False):
+    if isinstance(data, pd.DataFrame):
+        data = data['G3']
     if segment_to_bins:
-        data = pd.cut(students_df['G3'], bins=[-1, 1, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20], labels=False)
+        data = pd.cut(data, bins=[-1, 1, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20], labels=False)
         number_of_bins = 16 + 1
         color = 'g'
     else:
-        data = students_df['G3']
         number_of_bins = 21 + 1
         color = 'y'
 
     # Plot histogram
     plt.figure()
     bins = np.arange(number_of_bins) - 0.5
-    plt.hist(data, bins, density=True, alpha=0.6, color=color, edgecolor='black')
+    plt.hist(data, bins, alpha=0.6, color=color, edgecolor='black')
     plt.xticks(range(number_of_bins - 1))
     plt.xlim([-1, number_of_bins - 1])
 
     # Plot formatting
     plt.title(f"Distribution of Final Grades (G3){' Bins' if segment_to_bins else ''}")
     plt.xlabel(f"Final Grade (G3){' Bin' if segment_to_bins else ''}")
-    plt.ylabel('Density')
+    plt.ylabel('Count')
 
     # Save the histogram image
     histogram_image_path = os.path.abspath(f"data\\g3{'_bins' if segment_to_bins else ''}_distribution_histogram.png")
@@ -283,11 +283,13 @@ def method_main():
     }
     # optimal_rounding_threshold = find_optimal_rounding_threshold(features_to_remove=features_to_remove, params=optimal_params)
     optimal_rounding_threshold = 0.5
+    # optimal_rounding_threshold = 0.62
     results_df = run_xgboost(features_to_remove=features_to_remove, params=optimal_params, rounding_threshold=optimal_rounding_threshold)
-    results_df.to_csv('results.csv')
+    # results_df = run_xgboost(features_to_remove=features_to_remove)
+    # results_df.to_csv('results.csv')
     evaluation = Evaluation(results_df)
     print(evaluation.get_mae_and_ci_string())
-    evaluation.plot_maes_histogram()
+    # evaluation.plot_maes_histogram()
     evaluation.plot_actual_vs_predicted()
 
 
